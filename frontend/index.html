@@ -260,12 +260,21 @@
                 });
 
                 const result = await response.json();
-                statusMsg.innerText = result.message || result.error;
+                statusMsg.innerText = result.result?.message || result.error || "❌ No response.";
+
+                if (result.result?.download_link) {
+                    const link = document.createElement("a");
+                    link.href = "http://127.0.0.1:5000" + result.result.download_link;
+                    link.download = "validation_result.xlsx";
+                    link.click();
+                }
+
             } catch (error) {
                 console.error(error);
-                statusMsg.innerText = "Validation failed.";
+                statusMsg.innerText = "❌ Validation failed due to a network or server error.";
             }
         }
+
 
         window.onload = function () {
             fetch("http://127.0.0.1:5000/get-validation-options")
