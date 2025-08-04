@@ -125,12 +125,11 @@
         <input type="text" id="databaseName" placeholder="TRSSky2" />
 
         <label for="dataType">Select Data Type:</label>
-        <select id="dataType">
-            <option value="customer_base">Customer Base</option>
-        </select>
+        <select id="dataType"></select>
+
 
         <label for="dataFile">Upload File (optional):</label>
-        <input type="file" id="dataFile" disabled />
+        <input type="file" id="dataFile" />
 
         <div>
             <button onclick="testConnection()">🔌 Test SQL Connection</button>
@@ -231,10 +230,63 @@
             }
         }
 
-        function runValidation() {
-            alert("Run Validation: Not yet implemented.");
+        async function runValidation() {
+            const server = document.getElementById("serverName").value.trim();
+            const database = document.getElementById("databaseName").value.trim();
+            const dataType = document.getElementById("dataType").value;
+            const fileInput = document.getElementById("dataFile");
+            const statusMsg = document.getElementById("statusMsg");
+
+            if (!server || !database || !dataType) {
+                statusMsg.innerText = "Please fill in all required fields.";
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append("server", server);
+            formData.append("database", database);
+            formData.append("dataType", dataType);
+
+            if (fileInput.files.length > 0) {
+                formData.append("file", fileInput.files[0]);
+            }
+
+            statusMsg.innerText = "Running validation...";
+
+            try {
+                const response = await fetch("http://127.0.0.1:5000/process", {
+                    method: "POST",
+                    body: formData
+                });
+
+                const result = await response.json();
+                statusMsg.innerText = result.message || result.error;
+            } catch (error) {
+                console.error(error);
+                statusMsg.innerText = "Validation failed.";
+            }
         }
+
+        window.onload = function () {
+            fetch("http://127.0.0.1:5000/get-validation-options")
+                .then(response => response.json())
+                .then(options => {
+                    const dropdown = document.getElementById("dataType");
+                    dropdown.innerHTML = ""; // Clear any defaults
+
+                    options.forEach(option => {
+                        const opt = document.createElement("option");
+                        opt.value = option;
+                        opt.textContent = option;
+                        dropdown.appendChild(opt);
+                    });
+                })
+                .catch(error => {
+                    console.error("Failed to load validation options:", error);
+                });
+        };
     </script>
+
 </body>
 
 </html>
