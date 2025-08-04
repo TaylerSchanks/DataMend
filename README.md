@@ -23,26 +23,33 @@ DataMend is a web-based tool built with Flask and JavaScript to assist Agvance u
 
 ---
 
-## 📁 Project Structure
+### 📁 Project Structure
+```
 DataMend/
 ├── backend/
-│   ├── app.py                 # Flask API entry point
-│   ├── requirements.txt       # Python dependencies
-│   ├── run_commands.txt       # Dev notes/scripts
-│   └── validators/            # Folder for validation modules
-│       ├── __init__.py
-│       └── validate_customer_base.py
+│ ├── app.py # Flask API entry point
+│ ├── requirements.txt # Python dependencies
+│ ├── run_commands.txt # Dev notes/scripts
+│ └── validators/ # Folder for validation modules
+│ ├── init.py
+│ └── validate_customer_base.py
 ├── frontend/
-│   └── index.html             # Main UI
+│ └── index.html # Main UI
 └── README.md
+```
 
 
+---
 
+## 🧪 Setup & Run
+
+```bash
 cd backend
 python -m venv venv
 venv\Scripts\activate
 pip install -r requirements.txt
 python app.py
+
 
 
 
