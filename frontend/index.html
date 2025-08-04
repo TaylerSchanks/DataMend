@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <title>DataMend</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #1e1e2f;
+            color: #fff;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            width: 90%;
+            max-width: 1000px;
+            margin: 40px auto;
+            padding: 40px;
+            background-color: #2c2c3c;
+            border-radius: 10px;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
+        }
+
+        .logo {
+            display: block;
+            margin: 0 auto 20px auto;
+            height: 40px;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        label {
+            font-weight: bold;
+            display: block;
+            margin-top: 20px;
+        }
+
+        input,
+        select {
+            width: 100%;
+            padding: 10px;
+            font-size: 16px;
+            margin-top: 5px;
+            border-radius: 5px;
+            border: none;
+            background-color: #3c3c4f;
+            color: white;
+        }
+
+        button {
+            margin-top: 20px;
+            margin-right: 10px;
+            padding: 12px 20px;
+            font-size: 16px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            background-color: #1a73e8;
+            color: white;
+        }
+
+        #statusMsg {
+            margin-top: 20px;
+            font-weight: bold;
+        }
+
+        table {
+            width: 100%;
+            margin-top: 20px;
+            border-collapse: collapse;
+        }
+
+        th,
+        td {
+            padding: 10px;
+            text-align: left;
+            border: 1px solid #444;
+        }
+
+        th {
+            background-color: #3b4cca;
+            color: white;
+        }
+
+        tr:nth-child(even) {
+            background-color: #2f2f45;
+        }
+
+        tr:nth-child(odd) {
+            background-color: #262636;
+        }
+
+        @media screen and (max-width: 768px) {
+            .container {
+                margin: 10px;
+                padding: 20px;
+            }
+
+            button {
+                width: 100%;
+                margin-top: 10px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div style="text-align: center;">
+            <img class="logo" src="https://cdn2.assets-servd.host/agvance-preview/production/logos/logo-agvance.svg"
+                alt="Agvance Logo">
+        </div>
+
+        <h1>DataMend</h1>
+
+        <label for="serverName">SQL Server Name:</label>
+        <input type="text" id="serverName" placeholder="tsfarm-sql19\sql2019" />
+
+        <label for="databaseName">Database Name:</label>
+        <input type="text" id="databaseName" placeholder="TRSSky2" />
+
+        <label for="dataType">Select Data Type:</label>
+        <select id="dataType">
+            <option value="customer_base">Customer Base</option>
+        </select>
+
+        <label for="dataFile">Upload File (optional):</label>
+        <input type="file" id="dataFile" disabled />
+
+        <div>
+            <button onclick="testConnection()">🔌 Test SQL Connection</button>
+            <button onclick="getGrowerTable()">📋 View Grower Table</button>
+            <button onclick="runValidation()">⚙️ Run Full Validation</button>
+        </div>
+
+        <p id="statusMsg"></p>
+        <div id="tableWrapper" class="table-wrapper"></div>
+    </div>
+
+    <script>
+        async function testConnection() {
+            const server = document.getElementById("serverName").value.trim();
+            const database = document.getElementById("databaseName").value.trim();
+            const statusMsg = document.getElementById("statusMsg");
+
+            if (!server || !database) {
+                statusMsg.innerText = "Please enter both SQL Server and Database names.";
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append("server", server);
+            formData.append("database", database);
+
+            statusMsg.innerText = "Testing connection...";
+
+            try {
+                const response = await fetch("http://127.0.0.1:5000/test-connection", {
+                    method: "POST",
+                    body: formData
+                });
+
+                const result = await response.json();
+                statusMsg.innerText = result.message || result.error;
+            } catch (error) {
+                console.error(error);
+                statusMsg.innerText = "Connection test failed.";
+            }
+        }
+
+        async function getGrowerTable() {
+            const server = document.getElementById("serverName").value.trim();
+            const database = document.getElementById("databaseName").value.trim();
+            const statusMsg = document.getElementById("statusMsg");
+            const wrapper = document.getElementById("tableWrapper");
+
+            wrapper.innerHTML = "";
+            statusMsg.innerText = "Loading grower table...";
+
+            const formData = new FormData();
+            formData.append("server", server);
+            formData.append("database", database);
+
+            try {
+                const response = await fetch("http://127.0.0.1:5000/get-growers", {
+                    method: "POST",
+                    body: formData
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    const data = result.data;
+                    const table = document.createElement("table");
+
+                    const thead = document.createElement("thead");
+                    const headerRow = document.createElement("tr");
+                    Object.keys(data[0]).forEach(col => {
+                        const th = document.createElement("th");
+                        th.textContent = col;
+                        headerRow.appendChild(th);
+                    });
+                    thead.appendChild(headerRow);
+                    table.appendChild(thead);
+
+                    const tbody = document.createElement("tbody");
+                    data.forEach(row => {
+                        const tr = document.createElement("tr");
+                        Object.values(row).forEach(value => {
+                            const td = document.createElement("td");
+                            td.textContent = value === null ? "" : value;
+                            tr.appendChild(td);
+                        });
+                        tbody.appendChild(tr);
+                    });
+                    table.appendChild(tbody);
+
+                    wrapper.appendChild(table);
+                    statusMsg.innerText = "✅ Grower table loaded.";
+                } else {
+                    statusMsg.innerText = result.error || "Failed to get grower table.";
+                }
+            } catch (error) {
+                console.error(error);
+                statusMsg.innerText = "Error getting grower table.";
+            }
+        }
+
+        function runValidation() {
+            alert("Run Validation: Not yet implemented.");
+        }
+    </script>
+</body>
+
+</html>
