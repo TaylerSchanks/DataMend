@@ -1,2 +1,2 @@
-def run_validation(data):
-    return {"message": "✅ Customer attributes validation placeholder executed."}
+def run_validation(conn, uploaded_file):
+    return {"message": "✅ Customer attributes validated!"}

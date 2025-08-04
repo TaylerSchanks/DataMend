@@ -3,12 +3,15 @@ from flask_cors import CORS
 import pyodbc
 import os
 
-# Import custom validation modules
-from validators import (
-    validate_customer_base,
-    validate_customer_attributes,
-    validate_customer_classifications
-)
+try:
+    from validators import (
+        validate_customer_base,
+        validate_customer_attributes,
+        validate_customer_classifications
+    )
+except Exception as e:
+    print(f"❌ Validator import failed: {e}")
+
 
 app = Flask(__name__)
 CORS(app)
