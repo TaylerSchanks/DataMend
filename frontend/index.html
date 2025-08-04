@@ -159,7 +159,7 @@
             statusMsg.innerText = "Testing connection...";
 
             try {
-                const response = await fetch("https://datamend.onrender.com/test-connection", {
+                const response = await fetch("http://127.0.0.1:5000/test-connection", {
                     method: "POST",
                     body: formData
                 });
@@ -186,7 +186,7 @@
             formData.append("database", database);
 
             try {
-                const response = await fetch("https://datamend.onrender.com/get-growers", {
+                const response = await fetch("http://127.0.0.1:5000/get-growers", {
                     method: "POST",
                     body: formData
                 });
@@ -254,7 +254,7 @@
             statusMsg.innerText = "Running validation...";
 
             try {
-                const response = await fetch("https://datamend.onrender.com/process", {
+                const response = await fetch("http://127.0.0.1:5000/process", {
                     method: "POST",
                     body: formData
                 });
@@ -268,7 +268,7 @@
         }
 
         window.onload = function () {
-            fetch("https://datamend.onrender.com/get-validation-options")
+            fetch("http://127.0.0.1:5000/get-validation-options")
                 .then(response => response.json())
                 .then(options => {
                     const dropdown = document.getElementById("dataType");
