@@ -1,8 +1,13 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import pyodbc
+import pandas as pd
+import tempfile
+import os
+from flask import send_file
 
-from validators import validate_customer_base, validate_customer_attributes, validate_customer_classifications
+from validators.validate_customer_classifications import run_validation as validate_customer_classifications
+
 
 app = Flask(__name__)
 CORS(app)
@@ -20,8 +25,6 @@ def get_connection(server, database):
     )
 
 VALIDATION_MAP = {
-    "Customer Base": validate_customer_base.run_validation,
-    "Customer Attributes": validate_customer_attributes.run_validation,
     "Customer Classifications": validate_customer_classifications
 }
 
@@ -76,6 +79,15 @@ def process_file():
         return jsonify({"result": result})
     except Exception as e:
         return jsonify({"error": f"❌ Validation failed: {str(e)}"}), 500
+    
+
+@app.route('/download')
+def download_file():
+    path = request.args.get('path')
+    if path and os.path.exists(path):
+        return send_file(path, as_attachment=True)
+    return jsonify({"error": "❌ File not found."}), 404
+
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
