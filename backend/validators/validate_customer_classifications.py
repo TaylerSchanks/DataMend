@@ -33,7 +33,6 @@ def get_table_metadata(server, database, username, password, table_name):
     } for col in columns if col[0] not in skip_fields]
 
 
-
 def validate_dataframe(df, metadata):
     valid_rows = []
     error_rows = []
@@ -89,23 +88,22 @@ def run_validation(conn, uploaded_file):
     else:
         df = pd.read_excel(file_path)
 
-    # Normalize column names (trim only, no lowercase)
+    # Normalize column names to lowercase
     df.columns = [col.strip().lower() for col in df.columns]
 
-    # Ensure required columns are present (case-sensitive)
+    # Ensure required columns are present
     required_columns = {"customerid", "classificationname"}
     missing_columns = required_columns - set(df.columns)
     if missing_columns:
-      raise ValueError(f"Missing required column(s): {', '.join(missing_columns)}")
+        raise ValueError(f"Missing required column(s): {', '.join(missing_columns)}")
 
-    # Rename for internal use (keep lowercase)
+    # Rename for internal use
     df.rename(columns={
-   "customerid": "growid",
-   "classificationname": "classificationname"
-}, inplace=True)
+        "customerid": "growid",
+        "classificationname": "classificationname"
+    }, inplace=True)
 
     print("Renamed DF Columns:", df.columns.tolist())
-
 
     # Get DB connection info
     server = conn.getinfo(pyodbc.SQL_SERVER_NAME)
@@ -116,14 +114,13 @@ def run_validation(conn, uploaded_file):
     # Pull table schema
     metadata = get_table_metadata(server, database, username, password, 'CustClass')
 
-    # Override required flags for fields we’re skipping
+    # Override required flags
     for col in metadata:
-        if col['name'] in {"CustClassKey", "MasterClassNamesKey"}:
+        if col['name'] in {"custclasskey", "masterclassnameskey"}:
             col['required'] = False
 
     print("Incoming DataFrame Columns:", df.columns.tolist())
     print("Metadata Columns:", [m['name'] for m in metadata])
-
 
     # Schema validation
     valid_df, error_df, warning_df = validate_dataframe(df, metadata)
@@ -131,32 +128,22 @@ def run_validation(conn, uploaded_file):
     print("Errors found:", len(error_df))
     print("Warnings found:", len(warning_df))
 
-
-    # Pull valid GrowIDs from grower table
+    # Pull valid GrowIDs
     cursor = conn.cursor()
     cursor.execute("SELECT growid FROM grower")
     valid_growids = {str(row[0]).strip() for row in cursor.fetchall()}
 
-    print("Valid DF Columns:", valid_df.columns.tolist())
+    # Load valid classification names
+    cursor.execute("""
+        SELECT DISTINCT M.ClassName
+        FROM dbo.MasterClassNames M
+        INNER JOIN dbo.CustClass C ON C.MasterClassNamesKey = M.MasterClassNamesKey
+    """)
+    valid_classnames = {str(row[0]).strip().lower() for row in cursor.fetchall()}
 
-    # Validate ClassificationName using JOIN logic
-    validated_classnames = set()
-    for name in valid_df["classificationname"].dropna().unique():
-        cursor.execute("""
-            SELECT TOP 1 1
-            FROM dbo.MasterClassNames M
-            INNER JOIN dbo.CustClass C ON C.MasterClassNamesKey = M.MasterClassNamesKey
-            WHERE M.ClassName = ?
-        """, name)
-        if cursor.fetchone():
-            validated_classnames.add(name.strip().lower())
-
-        
-
-
-    # Final validation loop
+    # Final validation loop (errors, warnings, valid)
     final_valid_rows = []
-    for _, row in valid_df.iterrows():
+    for _, row in df.iterrows():
         growid = str(row.get("growid", "")).strip()
         classname = str(row.get("classificationname", "")).strip().lower()
         row_dict = row.to_dict()
@@ -166,22 +153,26 @@ def run_validation(conn, uploaded_file):
         if growid not in valid_growids:
             row_issues.append(f"Invalid GrowID: {growid}")
 
-        if classname not in validated_classnames:
+        if classname and classname not in valid_classnames:
             row_warnings.append(f"[{row.get('classificationname')}] needs added to Agvance")
 
+        # Attach messages
         if row_issues:
             row_dict["ValidationErrors"] = "; ".join(row_issues)
+        if row_warnings:
+            row_dict["ValidationWarnings"] = "; ".join(row_warnings)
+
+        # Output logic
+        if row_issues:
             error_df = pd.concat([error_df, pd.DataFrame([row_dict])], ignore_index=True)
         elif row_warnings:
-            row_dict["ValidationWarnings"] = "; ".join(row_warnings)
             warning_df = pd.concat([warning_df, pd.DataFrame([row_dict])], ignore_index=True)
         else:
             final_valid_rows.append(row)
 
-    # Final valid DataFrame
     final_valid_df = pd.DataFrame(final_valid_rows)
 
-    # Write results to Excel file
+    # Write to Excel
     output_path = os.path.join(tempfile.gettempdir(), "validation_result.xlsx")
     with pd.ExcelWriter(output_path, engine='openpyxl') as writer:
         if not final_valid_df.empty:
