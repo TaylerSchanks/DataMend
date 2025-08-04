@@ -59,6 +59,8 @@ VALIDATION_MAP = {
 }
 
 @app.route('/process', methods=['POST'])
+def index():
+    return "✅ DataMend API is up and running!"
 def process_file():
     server = request.form.get("server")
     database = request.form.get("database")
