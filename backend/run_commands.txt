@@ -1,0 +1,13 @@
+# Step-by-step startup for DataMend
+
+1. Open terminal and go to backend folder:
+   cd C:\DataMend\backend
+
+2. Activate virtual environment:
+   venv\Scripts\activate
+
+3. Run Flask app:
+   python app.py
+
+4. Open frontend:
+   Double-click C:\DataMend\frontend\index.html
