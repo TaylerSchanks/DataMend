@@ -1,20 +1,28 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import pyodbc
+import os
 
-from validators import validate_customer_base, validate_customer_attributes, validate_customer_classifications
+# Import custom validation modules
+from validators import (
+    validate_customer_base,
+    validate_customer_attributes,
+    validate_customer_classifications
+)
 
 app = Flask(__name__)
 CORS(app)
 
-SQL_USERNAME = "Agvance"
-SQL_PASSWORD = "AgvSQL2000"
+# ✅ Use environment variables for sensitive info
+SQL_USERNAME = os.getenv("SQL_USERNAME")
+SQL_PASSWORD = os.getenv("SQL_PASSWORD")
 
-@app.route('/get-validation-options', methods=['GET'])
-def get_validation_options():
-    return jsonify(list(VALIDATION_MAP.keys()))
+# 👇 Root route for homepage
+@app.route('/')
+def home():
+    return "👋 Welcome to DataMend! The API is running."
 
-
+# 👇 Connection helper
 def get_connection(server, database):
     return pyodbc.connect(
         f"DRIVER={{ODBC Driver 17 for SQL Server}};"
@@ -24,6 +32,7 @@ def get_connection(server, database):
         f"PWD={SQL_PASSWORD}"
     )
 
+# 👇 API route: test DB connection
 @app.route('/test-connection', methods=['POST'])
 def test_connection():
     server = request.form.get('server')
@@ -35,6 +44,7 @@ def test_connection():
     except Exception as e:
         return jsonify({"error": f"❌ Connection failed: {str(e)}"}), 500
 
+# 👇 API route: preview grower data
 @app.route('/get-growers', methods=['POST'])
 def get_growers():
     server = request.form.get('server')
@@ -44,7 +54,8 @@ def get_growers():
         cursor = conn.cursor()
         cursor.execute("SELECT TOP 5 GROWID, GROWNAME1, GROWNAME2 FROM grower")
         columns = [column[0] for column in cursor.description]
-        rows = [dict(zip(columns, row)) for row in cursor.fetchall()]
+        rows = [dict(zip(columns, row)) for row in cursor.fetchall()
+]
         conn.close()
         return jsonify({"data": rows})
     except Exception as e:
@@ -58,16 +69,20 @@ VALIDATION_MAP = {
     # Add more mappings here
 }
 
+# 👇 API route: return list of validation types
+@app.route('/get-validation-options', methods=['GET'])
+def get_validation_options():
+    return jsonify(list(VALIDATION_MAP.keys()))
+
+# 👇 API route: validate uploaded file
 @app.route('/process', methods=['POST'])
-def index():
-    return "✅ DataMend API is up and running!"
 def process_file():
     server = request.form.get("server")
     database = request.form.get("database")
     data_type = request.form.get("dataType")
     uploaded_file = request.files.get("file")
 
-    if not all([server, database, data_type]):
+    if not all([server, database, data_type, uploaded_file]):
         return jsonify({"error": "❌ Missing required inputs."}), 400
 
     if data_type not in VALIDATION_MAP:
@@ -76,12 +91,12 @@ def process_file():
     try:
         conn = get_connection(server, database)
         validator_func = VALIDATION_MAP[data_type]
-        result = validator_func(conn, uploaded_file)  # Pass both conn + file
+        result = validator_func(conn, uploaded_file)
         conn.close()
         return jsonify({"result": result})
     except Exception as e:
         return jsonify({"error": f"❌ Validation failed: {str(e)}"}), 500
 
-
+# ✅ For Render deployment
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
