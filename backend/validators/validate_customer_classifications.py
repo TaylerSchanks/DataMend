@@ -173,7 +173,12 @@ def run_validation(conn, uploaded_file):
     final_valid_df = pd.DataFrame(final_valid_rows)
 
     # Write to Excel
-    output_path = os.path.join(tempfile.gettempdir(), "validation_result.xlsx")
+    from datetime import datetime
+    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+    filename = f"classification_validation_{timestamp}.xlsx"
+    output_path = os.path.join(tempfile.gettempdir(), filename)
+
+
     with pd.ExcelWriter(output_path, engine='openpyxl') as writer:
         if not final_valid_df.empty:
             final_valid_df.to_excel(writer, index=False, sheet_name="Valid")
@@ -184,5 +189,6 @@ def run_validation(conn, uploaded_file):
 
     return {
         "message": "✅ Validation completed with cross-checks.",
-        "download_link": f"/download?path={output_path}"
+        "file_type": "excel",
+        "download_link": f"/download/tempfile?name={filename}"
     }

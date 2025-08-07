@@ -4,86 +4,123 @@
 <head>
     <meta charset="UTF-8" />
     <title>DataMend</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
     <style>
+        /* Your existing styles stay the same for clean look */
         body {
-            font-family: Arial, sans-serif;
-            background-color: #1e1e2f;
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #1e1e2f, #23233a);
             color: #fff;
             margin: 0;
             padding: 0;
         }
 
         .container {
-            width: 90%;
-            max-width: 1000px;
+            max-width: 960px;
             margin: 40px auto;
             padding: 40px;
-            background-color: #2c2c3c;
-            border-radius: 10px;
-            box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
-        }
-
-        .logo {
-            display: block;
-            margin: 0 auto 20px auto;
-            height: 40px;
+            background-color: rgba(44, 44, 60, 0.95);
+            border-radius: 15px;
+            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4);
         }
 
         h1 {
             text-align: center;
-            margin-bottom: 20px;
+            margin-bottom: 30px;
+            font-size: 2.2rem;
+            background: linear-gradient(45deg, #4fc3f7, #1a73e8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
         }
 
         label {
-            font-weight: bold;
             display: block;
             margin-top: 20px;
+            margin-bottom: 5px;
+            font-weight: 600;
         }
 
         input,
         select {
             width: 100%;
-            padding: 10px;
+            padding: 12px;
             font-size: 16px;
-            margin-top: 5px;
-            border-radius: 5px;
+            border-radius: 8px;
             border: none;
-            background-color: #3c3c4f;
+            background-color: #3a3a50;
             color: white;
         }
 
+        .button-row {
+            display: flex;
+            gap: 10px;
+            margin-top: 30px;
+            flex-wrap: wrap;
+        }
+
         button {
-            margin-top: 20px;
-            margin-right: 10px;
-            padding: 12px 20px;
+            flex: 1 1 200px;
+            padding: 14px;
             font-size: 16px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            background-color: #1a73e8;
+            border-radius: 8px;
+            background: linear-gradient(135deg, #1a73e8, #4fc3f7);
             color: white;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+            transition: all 0.25s ease;
+        }
+
+        button:hover {
+            transform: scale(1.04);
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.5);
         }
 
         #statusMsg {
             margin-top: 20px;
             font-weight: bold;
+            color: #66ccff;
+        }
+
+        .file-upload-container {
+            position: relative;
+            margin-top: 10px;
+        }
+
+        #uploadButton {
+            background: linear-gradient(135deg, #26c6da, #00acc1);
+            color: white;
+            font-weight: 600;
+            padding: 12px 20px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+        }
+
+        #uploadButton:hover {
+            transform: scale(1.05);
+        }
+
+        #fileName {
+            margin-left: 12px;
+            font-style: italic;
+            color: #bbb;
         }
 
         table {
             width: 100%;
-            margin-top: 20px;
+            margin-top: 30px;
             border-collapse: collapse;
         }
 
         th,
         td {
-            padding: 10px;
-            text-align: left;
+            padding: 12px;
             border: 1px solid #444;
         }
 
         th {
-            background-color: #3b4cca;
+            background: linear-gradient(45deg, #3949ab, #1e88e5);
             color: white;
         }
 
@@ -97,13 +134,12 @@
 
         @media screen and (max-width: 768px) {
             .container {
-                margin: 10px;
+                margin: 20px;
                 padding: 20px;
             }
 
-            button {
-                width: 100%;
-                margin-top: 10px;
+            .button-row {
+                flex-direction: column;
             }
         }
     </style>
@@ -111,11 +147,6 @@
 
 <body>
     <div class="container">
-        <div style="text-align: center;">
-            <img class="logo" src="https://cdn2.assets-servd.host/agvance-preview/production/logos/logo-agvance.svg"
-                alt="Agvance Logo">
-        </div>
-
         <h1>DataMend</h1>
 
         <label for="serverName">SQL Server Name:</label>
@@ -125,13 +156,18 @@
         <input type="text" id="databaseName" placeholder="TRSSky2" />
 
         <label for="dataType">Select Data Type:</label>
-        <select id="dataType"></select>
+        <select id="dataType" required>
+            <option value="" disabled selected hidden>-- Select a data type --</option>
+        </select>
 
+        <label for="dataFileUpload">Upload File:</label>
+        <div class="file-upload-container">
+            <input type="file" id="dataFile" style="display: none;" />
+            <button type="button" id="uploadButton">📁 Choose File</button>
+            <span id="fileName">No file chosen</span>
+        </div>
 
-        <label for="dataFile">Upload File (optional):</label>
-        <input type="file" id="dataFile" />
-
-        <div>
+        <div class="button-row">
             <button onclick="testConnection()">🔌 Test SQL Connection</button>
             <button onclick="getGrowerTable()">📋 View Grower Table</button>
             <button onclick="runValidation()">⚙️ Run Full Validation</button>
@@ -142,6 +178,20 @@
     </div>
 
     <script>
+        document.getElementById("uploadButton").addEventListener("click", () => {
+            document.getElementById("dataFile").click();
+        });
+
+        document.getElementById("dataFile").addEventListener("change", () => {
+            const fileInput = document.getElementById("dataFile");
+            const fileNameDisplay = document.getElementById("fileName");
+            if (fileInput.files.length > 0) {
+                fileNameDisplay.textContent = fileInput.files[0].name;
+            } else {
+                fileNameDisplay.textContent = "No file chosen";
+            }
+        });
+
         async function testConnection() {
             const server = document.getElementById("serverName").value.trim();
             const database = document.getElementById("databaseName").value.trim();
@@ -163,7 +213,6 @@
                     method: "POST",
                     body: formData
                 });
-
                 const result = await response.json();
                 statusMsg.innerText = result.message || result.error;
             } catch (error) {
@@ -175,8 +224,8 @@
         async function getGrowerTable() {
             const server = document.getElementById("serverName").value.trim();
             const database = document.getElementById("databaseName").value.trim();
-            const statusMsg = document.getElementById("statusMsg");
             const wrapper = document.getElementById("tableWrapper");
+            const statusMsg = document.getElementById("statusMsg");
 
             wrapper.innerHTML = "";
             statusMsg.innerText = "Loading grower table...";
@@ -193,32 +242,32 @@
 
                 const result = await response.json();
 
-                if (response.ok) {
-                    const data = result.data;
+                if (response.ok && result.data) {
                     const table = document.createElement("table");
-
                     const thead = document.createElement("thead");
                     const headerRow = document.createElement("tr");
-                    Object.keys(data[0]).forEach(col => {
+
+                    Object.keys(result.data[0]).forEach(col => {
                         const th = document.createElement("th");
                         th.textContent = col;
                         headerRow.appendChild(th);
                     });
+
                     thead.appendChild(headerRow);
                     table.appendChild(thead);
 
                     const tbody = document.createElement("tbody");
-                    data.forEach(row => {
+                    result.data.forEach(row => {
                         const tr = document.createElement("tr");
-                        Object.values(row).forEach(value => {
+                        Object.values(row).forEach(val => {
                             const td = document.createElement("td");
-                            td.textContent = value === null ? "" : value;
+                            td.textContent = val === null ? "" : val;
                             tr.appendChild(td);
                         });
                         tbody.appendChild(tr);
                     });
-                    table.appendChild(tbody);
 
+                    table.appendChild(tbody);
                     wrapper.appendChild(table);
                     statusMsg.innerText = "✅ Grower table loaded.";
                 } else {
@@ -226,7 +275,7 @@
                 }
             } catch (error) {
                 console.error(error);
-                statusMsg.innerText = "Error getting grower table.";
+                statusMsg.innerText = "Error loading table.";
             }
         }
 
@@ -237,8 +286,8 @@
             const fileInput = document.getElementById("dataFile");
             const statusMsg = document.getElementById("statusMsg");
 
-            if (!server || !database || !dataType) {
-                statusMsg.innerText = "Please fill in all required fields.";
+            if (!server || !database || !dataType || fileInput.files.length === 0) {
+                statusMsg.innerText = "❗ Please complete all fields and upload a file.";
                 return;
             }
 
@@ -246,12 +295,9 @@
             formData.append("server", server);
             formData.append("database", database);
             formData.append("dataType", dataType);
+            formData.append("file", fileInput.files[0]);
 
-            if (fileInput.files.length > 0) {
-                formData.append("file", fileInput.files[0]);
-            }
-
-            statusMsg.innerText = "Running validation...";
+            statusMsg.innerText = "⏳ Running validation...";
 
             try {
                 const response = await fetch("http://127.0.0.1:5000/process", {
@@ -260,13 +306,16 @@
                 });
 
                 const result = await response.json();
-                statusMsg.innerText = result.result?.message || result.error || "❌ No response.";
+                statusMsg.innerText = result.message || result.error || "❌ Unknown error.";
 
-                if (result.result?.download_link) {
+                // ✅ Fix here: use the dynamic download_link provided by backend
+                if ((result.file_type === "excel" || result.file_type === "sql") && result.download_link) {
                     const link = document.createElement("a");
-                    link.href = "http://127.0.0.1:5000" + result.result.download_link;
-                    link.download = "validation_result.xlsx";
+                    link.href = `http://127.0.0.1:5000${result.download_link}`;
+                    link.download = "";  // Let browser decide based on Content-Disposition
+                    document.body.appendChild(link);
                     link.click();
+                    document.body.removeChild(link);
                 }
 
             } catch (error) {
@@ -276,13 +325,13 @@
         }
 
 
+
         window.onload = function () {
             fetch("http://127.0.0.1:5000/get-validation-options")
                 .then(response => response.json())
                 .then(options => {
                     const dropdown = document.getElementById("dataType");
-                    dropdown.innerHTML = ""; // Clear any defaults
-
+                    dropdown.innerHTML = '<option value="" disabled selected hidden>-- Select a data type --</option>';
                     options.forEach(option => {
                         const opt = document.createElement("option");
                         opt.value = option;
@@ -295,7 +344,6 @@
                 });
         };
     </script>
-
 </body>
 
 </html>
