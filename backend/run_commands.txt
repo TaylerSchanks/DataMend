@@ -1,13 +1,57 @@
-# Step-by-step startup for DataMend
+# =========================
+# DataMend Setup & Run Guide
+# =========================
 
-1. Open terminal and go to backend folder:
-   cd C:\DataMend\backend
+# --------
+# 1. First-Time Setup
+# --------
+# Run these commands in your terminal from the backend folder.
 
-2. Activate virtual environment:
-   venv\Scripts\activate
+# Create virtual environment
+python -m venv venv
 
-3. Run Flask app:
-   python app.py
+# Activate virtual environment
+# (Use ONE of the following depending on your shell)
+# Command Prompt:
+venv\Scripts\activate
+# PowerShell:
+.\venv\Scripts\Activate.ps1
+# macOS / Linux:
+source venv/bin/activate
 
-4. Open frontend:
-   Double-click C:\DataMend\frontend\index.html
+# Upgrade pip
+python -m pip install --upgrade pip
+
+# Install dependencies
+pip install -r requirements.txt
+
+
+# --------
+# 2. Daily Run
+# --------
+# From the backend folder:
+
+# Activate virtual environment
+# Command Prompt:
+venv\Scripts\activate
+# PowerShell:
+.\venv\Scripts\Activate.ps1
+# macOS / Linux:
+source venv/bin/activate
+
+# Run Flask app
+python app.py
+
+
+# --------
+# 3. Open Frontend
+# --------
+# Option A: If frontend is static (no API calls), open the index.html file in a browser.
+# Option B: If frontend calls the backend API, serve it locally to avoid CORS issues:
+#   cd frontend
+#   python -m http.server 5173
+# Then open http://localhost:5173 in your browser.
+
+# --------
+# 4. Optional: Allow venv activation in PowerShell if blocked
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope Process
